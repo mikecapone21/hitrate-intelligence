@@ -83,11 +83,17 @@ tbody tr:hover td{background:var(--bg)}
     <div class="metric"><div class="metric-label">Last refresh</div><div class="metric-val" id="m-time" style="font-size:14px;padding-top:6px">—</div></div>
   </div>
 
-  <div class="tabs">
-    <button class="tab active" onclick="filter('all',this)">All cards</button>
-    <button class="tab" onclick="filter('rotate',this)">Rotation plays</button>
-    <button class="tab" onclick="filter('buy',this)">Buy targets</button>
-    <button class="tab" onclick="filter('watch',this)">Accumulate</button>
+  <div class="tabs" style="display:flex;justify-content:space-between;align-items:center">
+    <div style="display:flex;gap:6px">
+      <button class="tab active" onclick="filter('all',this)">All cards</button>
+      <button class="tab" onclick="filter('rotate',this)">Rotation plays</button>
+      <button class="tab" onclick="filter('buy',this)">Buy targets</button>
+      <button class="tab" onclick="filter('watch',this)">Accumulate</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="cache-label" style="font-size:11px;color:var(--faint)"></span>
+      <button id="refresh-btn" onclick="forceRefresh()" style="font-size:11px;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:20px;border:1px solid var(--border);cursor:pointer;background:var(--surface);color:var(--muted)">↻ Refresh</button>
+    </div>
   </div>
 
   <div class="table-wrap"><div id="tbody" class="loading">Fetching live prices...</div></div>
@@ -124,16 +130,23 @@ const stages={'rotation-boom':['st-rot','Rotation boom ↑'],'supply-dryup':['st
 function badge(s){const[c,l]=badges[s]||['b-watch',s];return`<span class="badge ${c}">${l}</span>`;}
 function stage(s){const[c,l]=stages[s]||['st-post',s];return`<span class="stage ${c}">${l}</span>`;}
 function score(n){const c=n>=80?'s-h':n>=65?'s-m':'s-l';return`<span class="score ${c}">${n}</span>`;}
+function trendCell(t){
+  if(!t||t.score==null)return`<span class="price-dash">—</span>`;
+  const arrow=t.direction==='up'?'↑':t.direction==='down'?'↓':'→';
+  const col=t.direction==='up'?'var(--green)':t.direction==='down'?'var(--red)':'var(--muted)';
+  return`<span style="font-size:12px;font-weight:500;color:${col}">${arrow} ${t.score}<span style="font-size:10px;color:var(--faint);font-weight:400">/100</span></span>`;
+}
 function renderTable(){
   const rows=(tab==='all'?cards:cards.filter(c=>c.signal===tab));
   if(!rows.length){document.getElementById('tbody').innerHTML='<div class="loading">No cards in this category.</div>';return;}
   document.getElementById('tbody').innerHTML=`<table>
-    <thead><tr><th>Card</th><th>Signal</th><th>Market price</th><th>Buy target</th><th>Score</th></tr></thead>
+    <thead><tr><th>Card</th><th>Signal</th><th>Market price</th><th>Buy target</th><th>Trend</th><th>Score</th></tr></thead>
     <tbody>${rows.map(c=>`<tr>
       <td><div class="card-name">${c.name}</div><div class="card-set">${c.set}</div></td>
       <td>${badge(c.signal)}</td>
       <td>${c.price!=null?`<span class="price-val">$${c.price.toFixed(2)}</span><span class="src-tag">${c.source}</span>`:'<span class="price-dash">—</span>'}</td>
       <td>${c.buyTarget!=null?`<span class="buy-target">$${c.buyTarget}</span>`:'<span class="price-dash">—</span>'}</td>
+      <td>${trendCell(c.trend)}</td>
       <td>${score(c.score)}</td>
     </tr>`).join('')}</tbody></table>`;
 }
@@ -171,6 +184,11 @@ async function load(){
     document.getElementById('m-live').textContent=live;
     document.getElementById('m-sigs').textContent=cards.filter(c=>c.signal==='rotate'||c.signal==='buy').length;
     document.getElementById('m-time').textContent=new Date(d.updated).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const lbl=document.getElementById('cache-label');
+    if(d.cacheAge!=null){
+      const mins=Math.round(d.cacheAge/60);
+      lbl.textContent=d.refreshing?'Refreshing…':mins<1?'Cache: just updated':`Cache: ${mins}m old`;
+    }
     renderPills(cards);
     renderTable();
     renderCycles(d.cycles);
@@ -178,6 +196,24 @@ async function load(){
     document.getElementById('tbody').innerHTML='<div class="loading">Error loading data. Check server.</div>';
   }
 }
+window.forceRefresh=async function(){
+  const btn=document.getElementById('refresh-btn');
+  const lbl=document.getElementById('cache-label');
+  btn.textContent='Refreshing…';btn.disabled=true;
+  lbl.textContent='Fetching all 12 cards (~15s)…';
+  try{
+    await fetch('/api/refresh',{method:'POST'});
+    // Poll until refresh completes
+    const poll=setInterval(async()=>{
+      const s=await(await fetch('/api/cache-status')).json();
+      if(!s.inFlight){
+        clearInterval(poll);
+        btn.textContent='↻ Refresh';btn.disabled=false;
+        load();
+      }
+    },2000);
+  }catch(e){btn.textContent='↻ Refresh';btn.disabled=false;}
+};
 load();
 setInterval(load,5*60*1000);
 </script>
