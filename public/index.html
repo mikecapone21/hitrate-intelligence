@@ -142,7 +142,7 @@ function renderTable(){
   document.getElementById('tbody').innerHTML=`<table>
     <thead><tr><th>Card</th><th>Signal</th><th>Market price</th><th>Buy target</th><th>Trend</th><th>Score</th></tr></thead>
     <tbody>${rows.map(c=>`<tr>
-      <td><div class="card-name">${c.name}</div><div class="card-set">${c.set}</div></td>
+      <td><div class="card-name">${c.name}</div><div class="card-set">${c.set} · ${c.cardNumber}</div></td>
       <td>${badge(c.signal)}</td>
       <td>${c.price!=null?`<span class="price-val">$${c.price.toFixed(2)}</span><span class="src-tag">${c.source}</span>`:'<span class="price-dash">—</span>'}</td>
       <td>${c.buyTarget!=null?`<span class="buy-target">$${c.buyTarget}</span>`:'<span class="price-dash">—</span>'}</td>
