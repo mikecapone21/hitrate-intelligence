@@ -9,7 +9,7 @@
 :root{--green:#5dc832;--black:#111;--bg:#f7f7f5;--surface:#fff;--border:rgba(0,0,0,0.08);--text:#111;--muted:#666;--faint:#999;--red:#e24b4a;--amber:#ef9f27;--purple:#534ab7}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh}
-.shell{max-width:1100px;margin:0 auto;padding:0 24px}
+.shell{max-width:1160px;margin:0 auto;padding:0 24px}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:20px 0 16px;border-bottom:1px solid var(--border);margin-bottom:24px}
 .logo-text{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;letter-spacing:-.02em}
 .logo-text em{color:var(--green);font-style:normal}
@@ -45,9 +45,15 @@ tbody tr:hover td{background:var(--bg)}
 .b-watch{background:#faeeda;color:#854F0B}
 .score{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:500}
 .s-h{background:#eaf3de;color:#3B6D11}.s-m{background:#faeeda;color:#854F0B}.s-l{background:#fcebeb;color:#A32D2D}
+/* YouTube buzz badge */
+.buzz-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 7px;border-radius:12px;background:#fff3cd;color:#856404;border:1px solid rgba(239,159,39,0.3);white-space:nowrap;cursor:default}
+.buzz-badge a{color:inherit;text-decoration:none}
+.buzz-badge a:hover{text-decoration:underline}
+/* Two-col layout */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px}
-.panel-title{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+.panel-title{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.panel-count{font-size:10px;padding:1px 7px;border-radius:10px;background:var(--bg);color:var(--muted)}
 .cycle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;gap:8px}
 .cycle-row:last-child{border-bottom:none}
 .cycle-name{font-weight:500;font-size:13px}
@@ -61,6 +67,27 @@ tbody tr:hover td{background:var(--bg)}
 .mblock:last-child{margin-bottom:0}
 .mblock-title{font-weight:500;margin-bottom:3px}
 .mblock-desc{color:var(--muted);line-height:1.5}
+/* News alerts section */
+.news-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:24px}
+.news-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.news-item:last-child{border-bottom:none}
+.news-source-tag{font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px;background:var(--bg);color:var(--muted);border:1px solid var(--border);white-space:nowrap;flex-shrink:0;margin-top:1px}
+.news-body{}
+.news-headline{font-size:12px;font-weight:500;line-height:1.4;margin-bottom:3px}
+.news-headline a{color:var(--text);text-decoration:none}
+.news-headline a:hover{color:var(--green);text-decoration:underline}
+.news-meta{font-size:10px;color:var(--faint)}
+.news-match{display:inline-block;font-size:10px;color:var(--green);background:#f0fce8;border-radius:8px;padding:1px 6px;margin-left:6px}
+.news-empty{padding:1.5rem;text-align:center;color:var(--muted);font-size:12px}
+/* YouTube panel */
+.yt-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.yt-item:last-child{border-bottom:none}
+.yt-views{font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px;background:#fff3cd;color:#856404;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.yt-body{}
+.yt-title{font-size:12px;font-weight:500;line-height:1.4;margin-bottom:2px}
+.yt-title a{color:var(--text);text-decoration:none}
+.yt-title a:hover{color:var(--red);text-decoration:underline}
+.yt-meta{font-size:10px;color:var(--faint)}
 .loading{padding:2rem;text-align:center;color:var(--muted);font-size:13px}
 .footer{padding:20px 0;text-align:center;font-size:11px;color:var(--faint);border-top:1px solid var(--border);margin-top:32px}
 @media(max-width:768px){.metrics{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}.topbar{flex-direction:column;align-items:flex-start;gap:12px}}
@@ -98,9 +125,12 @@ tbody tr:hover td{background:var(--bg)}
 
   <div class="table-wrap"><div id="tbody" class="loading">Fetching live prices...</div></div>
 
-  <div class="two-col">
+  <!-- YouTube Buzz panel + Manipulation Radar + Set Cycles -->
+  <div class="two-col" style="margin-bottom:24px">
     <div class="panel">
-      <div class="panel-title">Set cycle tracker</div>
+      <div class="panel-title">
+        Set cycle tracker
+      </div>
       <div id="cycles"><div class="loading" style="padding:1rem">Loading...</div></div>
     </div>
     <div class="panel">
@@ -120,36 +150,73 @@ tbody tr:hover td{background:var(--bg)}
     </div>
   </div>
 
+  <!-- News Intelligence -->
+  <div class="news-section">
+    <div class="panel-title" style="margin-bottom:14px">
+      <span>📰 News intelligence <span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">pokemon.com · pokebeach · limitless · bulbapedia · serebii</span></span>
+      <span id="news-count" class="panel-count">loading…</span>
+    </div>
+    <div id="news-list"><div class="news-empty">Loading news alerts…</div></div>
+  </div>
+
+  <!-- YouTube Buzz -->
+  <div class="news-section" id="yt-section">
+    <div class="panel-title" style="margin-bottom:14px">
+      <span>🔥 YouTube buzz <span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">videos mentioning watchlist cards · last 7 days · 10k+ views</span></span>
+      <span id="yt-count" class="panel-count">loading…</span>
+    </div>
+    <div id="yt-list"><div class="news-empty">Loading YouTube buzz…</div></div>
+  </div>
+
   <div class="footer">HitRate Intelligence &copy; 2026 · hitrateintelligence.com · Internal build</div>
 </div>
 
 <script>
-let cards=[], tab='all';
-const badges={rotate:['b-rotate','Rotation ↑'],buy:['b-buy','Buy target'],watch:['b-watch','Accumulate']};
-const stages={'rotation-boom':['st-rot','Rotation boom ↑'],'supply-dryup':['st-dry','Supply dry-up'],'post-release':['st-post','Post-release dip'],'pre-discontinuation':['st-pre','Pre-discontinuation']};
+let cards = [], tab = 'all', ytBuzz = {}, ytLoaded = false;
+
+const badges = {rotate:['b-rotate','Rotation ↑'],buy:['b-buy','Buy target'],watch:['b-watch','Accumulate']};
+const stages = {'rotation-boom':['st-rot','Rotation boom ↑'],'supply-dryup':['st-dry','Supply dry-up'],'post-release':['st-post','Post-release dip'],'pre-discontinuation':['st-pre','Pre-discontinuation']};
+
 function badge(s){const[c,l]=badges[s]||['b-watch',s];return`<span class="badge ${c}">${l}</span>`;}
 function stage(s){const[c,l]=stages[s]||['st-post',s];return`<span class="stage ${c}">${l}</span>`;}
 function score(n){const c=n>=80?'s-h':n>=65?'s-m':'s-l';return`<span class="score ${c}">${n}</span>`;}
+
 function trendCell(t){
   if(!t||t.score==null)return`<span class="price-dash">—</span>`;
   const arrow=t.direction==='up'?'↑':t.direction==='down'?'↓':'→';
   const col=t.direction==='up'?'var(--green)':t.direction==='down'?'var(--red)':'var(--muted)';
   return`<span style="font-size:12px;font-weight:500;color:${col}">${arrow} ${t.score}<span style="font-size:10px;color:var(--faint);font-weight:400">/100</span></span>`;
 }
+
+function buzzCell(cardName){
+  const videos = ytBuzz[cardName] || [];
+  if(!videos.length) return '<span class="price-dash">—</span>';
+  const top = videos[0];
+  return `<span class="buzz-badge" title="${top.channel}: ${top.title}">🔥 <a href="${top.url}" target="_blank" rel="noopener">${videos.length} video${videos.length>1?'s':''}</a></span>`;
+}
+
+function fmtViews(n){
+  if(n>=1000000) return (n/1000000).toFixed(1)+'M';
+  if(n>=1000) return Math.round(n/1000)+'K';
+  return n.toString();
+}
+
 function renderTable(){
-  const rows=(tab==='all'?cards:cards.filter(c=>c.signal===tab));
+  const rows = (tab==='all' ? cards : cards.filter(c=>c.signal===tab));
   if(!rows.length){document.getElementById('tbody').innerHTML='<div class="loading">No cards in this category.</div>';return;}
   document.getElementById('tbody').innerHTML=`<table>
-    <thead><tr><th>Card</th><th>Signal</th><th>Market price</th><th>Buy target</th><th>Trend</th><th>Score</th></tr></thead>
+    <thead><tr><th>Card</th><th>Signal</th><th>Market price</th><th>Buy target</th><th>Trend</th><th>Buzz</th><th>Score</th></tr></thead>
     <tbody>${rows.map(c=>`<tr>
       <td><div class="card-name">${c.name}</div><div class="card-set">${c.set} · ${c.cardNumber}</div></td>
       <td>${badge(c.signal)}</td>
       <td>${c.price!=null?`<span class="price-val">$${c.price.toFixed(2)}</span><span class="src-tag">${c.source}</span>`:'<span class="price-dash">—</span>'}</td>
       <td>${c.buyTarget!=null?`<span class="buy-target">$${c.buyTarget}</span>`:'<span class="price-dash">—</span>'}</td>
       <td>${trendCell(c.trend)}</td>
+      <td>${buzzCell(c.name)}</td>
       <td>${score(c.score)}</td>
     </tr>`).join('')}</tbody></table>`;
 }
+
 function renderCycles(data){
   document.getElementById('cycles').innerHTML=data.map(c=>`
     <div class="cycle-row">
@@ -157,34 +224,91 @@ function renderCycles(data){
       ${stage(c.stage)}
     </div>`).join('');
 }
+
 function renderPills(data){
-  const live=data.filter(c=>c.price!=null);
-  const pw=live.filter(c=>c.source==='PokéWallet').length;
-  const pt=live.filter(c=>c.source==='PokeTrace').length;
+  const live = data.filter(c=>c.price!=null);
+  const pt   = live.filter(c=>c.source==='PokeTrace').length;
+  const pw   = live.filter(c=>c.source==='PokéWallet').length;
   document.getElementById('pills').innerHTML=[
-    `<div class="pill"><span class="dot ${pw>0?'dot-g':'dot-a'}"></span>PokéWallet ${pw>0?'live':'no data'}</div>`,
-    `<div class="pill"><span class="dot ${pt>0?'dot-g':'dot-a'}"></span>PokeTrace ${pt>0?'live':'no data'}</div>`,
+    `<div class="pill"><span class="dot ${pt>0?'dot-g':'dot-a'}"></span>PokeTrace ${pt>0?'primary ('+pt+')':'no data'}</div>`,
+    `<div class="pill"><span class="dot ${pw>0?'dot-g':'dot-a'}"></span>PokéWallet ${pw>0?'fallback ('+pw+')':'no data'}</div>`,
     `<div class="pill"><span class="dot dot-a"></span>eBay pending</div>`,
     `<div class="pill"><span class="dot dot-x"></span>Reddit · Phase 2</div>`,
   ].join('');
 }
-window.filter=function(t,el){
+
+function renderNews(alerts){
+  const el = document.getElementById('news-list');
+  const ct = document.getElementById('news-count');
+  if(!alerts || !alerts.length){
+    el.innerHTML='<div class="news-empty">No watchlist mentions in the last 7 days across monitored sources.</div>';
+    ct.textContent='0 alerts';
+    return;
+  }
+  ct.textContent=alerts.length+' alert'+(alerts.length>1?'s':'');
+  el.innerHTML=alerts.slice(0,20).map(a=>`
+    <div class="news-item">
+      <span class="news-source-tag">${a.source}</span>
+      <div class="news-body">
+        <div class="news-headline"><a href="${a.url||'#'}" target="_blank" rel="noopener">${escHtml(a.headline)}</a><span class="news-match">${escHtml(a.matchedTerm)}</span></div>
+        <div class="news-meta">${new Date(a.publishedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderYoutube(data){
+  const el = document.getElementById('yt-list');
+  const ct = document.getElementById('yt-count');
+  // Flatten all videos across all cards, deduplicated by videoId
+  const seen = new Set();
+  const all  = [];
+  for(const [cardName, videos] of Object.entries(data||{})){
+    for(const v of videos){
+      if(!seen.has(v.videoId)){
+        seen.add(v.videoId);
+        all.push({...v, cardName});
+      }
+    }
+  }
+  all.sort((a,b)=>b.viewCount-a.viewCount);
+  if(!all.length){
+    el.innerHTML='<div class="news-empty">No videos with 10k+ views mentioning watchlist cards in the last 7 days.</div>';
+    ct.textContent='0 videos';
+    return;
+  }
+  ct.textContent=all.length+' video'+(all.length>1?'s':'');
+  el.innerHTML=all.slice(0,15).map(v=>`
+    <div class="yt-item">
+      <span class="yt-views">🔥 ${fmtViews(v.viewCount)}</span>
+      <div class="yt-body">
+        <div class="yt-title"><a href="${v.url}" target="_blank" rel="noopener">${escHtml(v.title)}</a></div>
+        <div class="yt-meta">${escHtml(v.channel)} · ${escHtml(v.cardName)} · ${new Date(v.publishedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+      </div>
+    </div>`).join('');
+}
+
+function escHtml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+window.filter = function(t,el){
   tab=t;
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   renderTable();
 };
+
 async function load(){
   try{
-    const r=await fetch('/api/watchlist');
-    const d=await r.json();
-    cards=d.cards;
-    const live=cards.filter(c=>c.price!=null).length;
-    document.getElementById('m-total').textContent=cards.length;
-    document.getElementById('m-live').textContent=live;
-    document.getElementById('m-sigs').textContent=cards.filter(c=>c.signal==='rotate'||c.signal==='buy').length;
-    document.getElementById('m-time').textContent=new Date(d.updated).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    const lbl=document.getElementById('cache-label');
+    const r = await fetch('/api/watchlist');
+    const d = await r.json();
+    cards = d.cards;
+    const live = cards.filter(c=>c.price!=null).length;
+    document.getElementById('m-total').textContent = cards.length;
+    document.getElementById('m-live').textContent  = live;
+    document.getElementById('m-sigs').textContent  = cards.filter(c=>c.signal==='rotate'||c.signal==='buy').length;
+    document.getElementById('m-time').textContent  = new Date(d.updated).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const lbl = document.getElementById('cache-label');
     if(d.cacheAge!=null){
       const mins=Math.round(d.cacheAge/60);
       lbl.textContent=d.refreshing?'Refreshing…':mins<1?'Cache: just updated':`Cache: ${mins}m old`;
@@ -196,26 +320,66 @@ async function load(){
     document.getElementById('tbody').innerHTML='<div class="loading">Error loading data. Check server.</div>';
   }
 }
-window.forceRefresh=async function(){
-  const btn=document.getElementById('refresh-btn');
-  const lbl=document.getElementById('cache-label');
-  btn.textContent='Refreshing…';btn.disabled=true;
+
+async function loadYoutube(){
+  try{
+    const r = await fetch('/api/youtube');
+    const d = await r.json();
+    if(!d.inFlight){
+      ytBuzz = d.data || {};
+      ytLoaded = true;
+      renderYoutube(ytBuzz);
+      renderTable(); // re-render table to show buzz badges
+    } else {
+      // Still fetching — retry in 30 s
+      setTimeout(loadYoutube, 30000);
+    }
+  }catch(e){
+    document.getElementById('yt-list').innerHTML='<div class="news-empty">YouTube buzz unavailable.</div>';
+    document.getElementById('yt-count').textContent='—';
+  }
+}
+
+async function loadNews(){
+  try{
+    const r = await fetch('/api/news');
+    const d = await r.json();
+    if(!d.inFlight){
+      renderNews(d.alerts);
+    } else {
+      setTimeout(loadNews, 20000);
+    }
+  }catch(e){
+    document.getElementById('news-list').innerHTML='<div class="news-empty">News feed unavailable.</div>';
+    document.getElementById('news-count').textContent='—';
+  }
+}
+
+window.forceRefresh = async function(){
+  const btn = document.getElementById('refresh-btn');
+  const lbl = document.getElementById('cache-label');
+  btn.textContent='Refreshing…'; btn.disabled=true;
   lbl.textContent='Fetching all 12 cards (~15s)…';
   try{
     await fetch('/api/refresh',{method:'POST'});
-    // Poll until refresh completes
     const poll=setInterval(async()=>{
       const s=await(await fetch('/api/cache-status')).json();
-      if(!s.inFlight){
+      if(!s.price?.inFlight){
         clearInterval(poll);
-        btn.textContent='↻ Refresh';btn.disabled=false;
+        btn.textContent='↻ Refresh'; btn.disabled=false;
         load();
       }
     },2000);
   }catch(e){btn.textContent='↻ Refresh';btn.disabled=false;}
 };
+
+// Initial load
 load();
-setInterval(load,5*60*1000);
+// Background signals — load after main data so they don't block
+setTimeout(loadYoutube, 500);
+setTimeout(loadNews, 1000);
+// Poll for fresh prices every 5 min
+setInterval(load, 5*60*1000);
 </script>
 </body>
 </html>
