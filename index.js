@@ -23,18 +23,18 @@ let priceCache  = { data: null, fetchedAt: null, inFlight: false };
 let trendsCache = { data: null, fetchedAt: null, inFlight: false };
 
 const WATCHLIST = [
-  { name: 'Rayquaza VMAX Alt Art',  set: 'Evolving Skies',       setCode: 'SWSH07', cardNumber: '217/203', cycle: 'rotation-boom', signal: 'rotate' },
-  { name: 'Umbreon VMAX Alt Art',   set: 'Evolving Skies',       setCode: 'SWSH07', cardNumber: '215/203', cycle: 'rotation-boom', signal: 'rotate' },
-  { name: 'Sylveon VMAX Alt Art',   set: 'Evolving Skies',       setCode: 'SWSH07', cardNumber: '212/203', cycle: 'rotation-boom', signal: 'rotate' },
-  { name: 'Giratina V Alt Art',     set: 'Lost Origin',          setCode: 'SWSH11', cardNumber: '201/196', cycle: 'rotation-boom', signal: 'rotate' },
-  { name: 'Giratina VSTAR Alt Art', set: 'Lost Origin',          setCode: 'SWSH11', cardNumber: '196/196', cycle: 'rotation-boom', signal: 'rotate' },
-  { name: 'Mew VMAX Alt Art',       set: 'Fusion Strike',        setCode: 'SWSH08', cardNumber: '268/264', cycle: 'rotation-boom', signal: 'rotate' },
-  { name: 'Lugia V Alt Art',        set: 'Silver Tempest',       setCode: 'SWSH12', cardNumber: '186/195', cycle: 'rotation-boom', signal: 'rotate' },
-  { name: 'Charizard ex SIR',       set: 'Obsidian Flames',      setCode: 'SV03',   cardNumber: '228/197', cycle: 'supply-dryup',  signal: 'buy'    },
-  { name: 'Charizard ex SAR',       set: 'Obsidian Flames',      setCode: 'SV03',   cardNumber: '223/197', cycle: 'supply-dryup',  signal: 'buy'    },
-  { name: 'Umbreon ex SAR',         set: 'Prismatic Evolutions', setCode: 'PRE',    cardNumber: '232/243', cycle: 'post-release',  signal: 'watch'  },
-  { name: 'Espeon ex SAR',          set: 'Prismatic Evolutions', setCode: 'PRE',    cardNumber: '236/243', cycle: 'post-release',  signal: 'watch'  },
-  { name: 'Pikachu ex SAR',         set: 'Prismatic Evolutions', setCode: 'PRE',    cardNumber: '244/243', cycle: 'post-release',  signal: 'watch'  },
+  { name: 'Rayquaza VMAX Alt Art',  pwQuery: 'Rayquaza VMAX Alternate Art',    set: 'Evolving Skies',       setCode: 'SWSH07', cardNumber: '217/203', cycle: 'rotation-boom', signal: 'rotate' },
+  { name: 'Umbreon VMAX Alt Art',   pwQuery: 'Umbreon VMAX Alt Art',            set: 'Evolving Skies',       setCode: 'SWSH07', cardNumber: '215/203', cycle: 'rotation-boom', signal: 'rotate' },
+  { name: 'Sylveon VMAX Alt Art',   pwQuery: 'Sylveon VMAX Alt Art',            set: 'Evolving Skies',       setCode: 'SWSH07', cardNumber: '212/203', cycle: 'rotation-boom', signal: 'rotate' },
+  { name: 'Giratina V Alt Art',     pwQuery: 'Giratina V Alt Art Lost Origin',    set: 'Lost Origin',          setCode: 'SWSH11', cardNumber: '201/196', cycle: 'rotation-boom', signal: 'rotate' },
+  { name: 'Giratina VSTAR Alt Art', pwQuery: 'Giratina VSTAR 201',                   set: 'Lost Origin',          setCode: 'SWSH11', cardNumber: '201/196', cycle: 'rotation-boom', signal: 'rotate' },
+  { name: 'Mew VMAX Alt Art',       pwQuery: 'Mew VMAX Alt Art',                 set: 'Fusion Strike',        setCode: 'SWSH08', cardNumber: '268/264', cycle: 'rotation-boom', signal: 'rotate' },
+  { name: 'Lugia V Alt Art',        pwQuery: 'Lugia V Alt Art',                  set: 'Silver Tempest',       setCode: 'SWSH12', cardNumber: '186/195', cycle: 'rotation-boom', signal: 'rotate' },
+  { name: 'Charizard ex Hyper Rare', pwQuery: 'Charizard ex Obsidian Flames',     set: 'Obsidian Flames',      setCode: 'OBF',    cardNumber: '228/197', cycle: 'supply-dryup',  signal: 'buy'    },
+  { name: 'Charizard ex SIR',       pwQuery: 'Charizard ex Obsidian Flames',     set: 'Obsidian Flames',      setCode: 'OBF',    cardNumber: '223/197', cycle: 'supply-dryup',  signal: 'buy'    },
+  { name: 'Umbreon ex SIR',         pwQuery: 'Umbreon ex Prismatic Evolutions',  set: 'Prismatic Evolutions', setCode: 'PRE', cardNumber: '232/243', pwCardNumber: '161/131', cycle: 'post-release',  signal: 'watch'  },
+  { name: 'Espeon ex SIR',          pwQuery: 'Espeon ex Prismatic Evolutions',   set: 'Prismatic Evolutions', setCode: 'PRE', cardNumber: '236/243', pwCardNumber: '155/131', cycle: 'post-release',  signal: 'watch'  },
+  { name: 'Pikachu ex Hyper Rare',  pwQuery: 'Pikachu ex Prismatic Evolutions',  set: 'Prismatic Evolutions', setCode: 'PRE', cardNumber: '244/243', pwCardNumber: '179/131', cycle: 'post-release',  signal: 'watch'  },
 ];
 
 const SET_CYCLES = [
@@ -53,35 +53,55 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function fetchPW(card) {
   if (!PW_KEY) return null;
-  const q = `${card.name} ${numericPart(card.cardNumber)}`;
+  // Use the curated pwQuery (name-only — appending card numbers breaks PW search)
+  const q = card.pwQuery;
   try {
     const res = await fetch(`${PW_BASE}/search?q=${encodeURIComponent(q)}&limit=25`, {
       headers: { 'X-API-Key': PW_KEY }
     });
     if (!res.ok) {
       if (res.status === 429) console.warn(`[PW] Rate limited for ${card.name}`);
+      else console.warn(`[PW] HTTP ${res.status} for ${card.name}`);
       return null;
     }
     const data    = await res.json();
     const results = data.results || [];
 
+    if (results.length === 0) return null;
+
+    const getPrice = (r) => {
+      const prices = r.tcgplayer?.prices || [];
+      const best   = prices.find(p => p.sub_type_name === 'Holofoil') || prices[0];
+      return best?.market_price || null;
+    };
+
+    // Build the list of card numbers to match (TCGPlayer + optional PW-specific numbering)
+    const wantNums = new Set([
+      card.cardNumber, numericPart(card.cardNumber),
+      ...(card.pwCardNumber ? [card.pwCardNumber, numericPart(card.pwCardNumber)] : [])
+    ]);
+
+    // Priority 1: set code + card number exact match
     for (const r of results) {
-      const num  = (r.card_info?.card_number || r.number || '').toString();
-      const code = (r.card_info?.set_code    || r.set_id  || '').toString().toUpperCase();
-      if ((num === card.cardNumber || num === numericPart(card.cardNumber)) &&
-           code === card.setCode.toUpperCase()) {
-        const prices = r.tcgplayer?.prices || [];
-        const best   = prices.find(p => p.sub_type_name === 'Holofoil') || prices[0];
-        if (best?.market_price) return { price: best.market_price, source: 'PokéWallet' };
+      const num  = (r.card_info?.card_number || '').toString();
+      const code = (r.card_info?.set_code    || '').toString().toUpperCase();
+      if (wantNums.has(num) && code === card.setCode.toUpperCase()) {
+        const price = getPrice(r);
+        if (price) return { price, source: 'PokéWallet' };
       }
     }
+    // Priority 2: card number match only (set code may differ between PW and TCGPlayer)
     for (const r of results) {
-      const num = (r.card_info?.card_number || r.number || '').toString();
-      if (num === card.cardNumber || num === numericPart(card.cardNumber)) {
-        const prices = r.tcgplayer?.prices || [];
-        const best   = prices.find(p => p.sub_type_name === 'Holofoil') || prices[0];
-        if (best?.market_price) return { price: best.market_price, source: 'PokéWallet' };
+      const num = (r.card_info?.card_number || '').toString();
+      if (wantNums.has(num)) {
+        const price = getPrice(r);
+        if (price) return { price, source: 'PokéWallet' };
       }
+    }
+    // Priority 3: single-result queries are highly specific — use as fallback
+    if (results.length === 1) {
+      const price = getPrice(results[0]);
+      if (price) return { price, source: 'PokéWallet' };
     }
   } catch(e) { console.error('[PW] fetch error:', e.message); }
   return null;
