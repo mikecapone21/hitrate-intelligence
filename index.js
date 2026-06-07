@@ -9,8 +9,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const PW_KEY  = process.env.POKEWALLET_KEY;
 const PT_KEY  = process.env.POKETRACE_KEY;
-const PW_BASE = 'https://api.pokewallet.io';
-const PT_BASE = 'https://api.poketrace.com/v1';
+const TCG_KEY = process.env.POKEMONTCG_KEY;
+const PW_BASE  = 'https://api.pokewallet.io';
+const PT_BASE  = 'https://api.poketrace.com/v1';
+const TCG_BASE = 'https://api.pokemontcg.io/v2';
 
 const PYTHON  = '/nix/store/flbj8bq2vznkcwss7sm0ky8rd0k6kar7-python-wrapped-0.1.0/bin/python3';
 
@@ -21,6 +23,13 @@ const TRENDS_TTL_MS = 6 * 60 * 60 * 1000;
 
 let priceCache  = { data: null, fetchedAt: null, inFlight: false };
 let trendsCache = { data: null, fetchedAt: null, inFlight: false };
+
+// TCG sets cache: 24 h (sets are released infrequently)
+const TCG_SETS_TTL_MS = 24 * 60 * 60 * 1000;
+let setsCache = { data: null, fetchedAt: null, inFlight: false };
+
+// Per-set cards cache: keyed by setId, 24 h
+const cardsCache = new Map(); // setId → { data, fetchedAt }
 
 const WATCHLIST = [
   { name: 'Rayquaza VMAX Alt Art',  pwQuery: 'Rayquaza VMAX Alternate Art',    set: 'Evolving Skies',       setCode: 'SWSH07', cardNumber: '217/203', cycle: 'rotation-boom', signal: 'rotate' },
@@ -228,7 +237,115 @@ async function refreshTrendsCache() {
   }
 }
 
+// ── Pokemon TCG Developer API helpers ───────────────────────────────────────
+
+function tcgHeaders() {
+  const h = { 'Content-Type': 'application/json' };
+  if (TCG_KEY) h['X-Api-Key'] = TCG_KEY;
+  return h;
+}
+
+async function tcgFetchAllSets() {
+  const res = await fetch(
+    `${TCG_BASE}/sets?q=legalities.standard:legal OR legalities.expanded:legal OR legalities.unlimited:legal&orderBy=releaseDate&pageSize=250`,
+    { headers: tcgHeaders() }
+  );
+  if (!res.ok) throw new Error(`TCG sets HTTP ${res.status}`);
+  const json = await res.json();
+  // Also fetch a second pass without the legality filter to get all sets ever
+  const res2 = await fetch(`${TCG_BASE}/sets?orderBy=releaseDate&pageSize=250`, { headers: tcgHeaders() });
+  if (!res2.ok) throw new Error(`TCG sets (all) HTTP ${res2.status}`);
+  const json2 = await res2.json();
+  const all = json2.data || json.data || [];
+  return all
+    .filter(s => s.legalities) // English sets always have legalities; filters out some non-English
+    .map(s => ({
+      id:          s.id,
+      name:        s.name,
+      series:      s.series,
+      releaseDate: s.releaseDate,
+      total:       s.total,
+      printedTotal: s.printedTotal,
+      ptcgoCode:   s.ptcgoCode || null,
+    }));
+}
+
+async function tcgFetchAllCards(setId) {
+  const cards = [];
+  let page = 1;
+  const pageSize = 250;
+  while (true) {
+    const res = await fetch(
+      `${TCG_BASE}/cards?q=set.id:${encodeURIComponent(setId)}&page=${page}&pageSize=${pageSize}&orderBy=number`,
+      { headers: tcgHeaders() }
+    );
+    if (!res.ok) throw new Error(`TCG cards HTTP ${res.status}`);
+    const json = await res.json();
+    const batch = json.data || [];
+    for (const c of batch) {
+      cards.push({
+        id:         c.id,
+        name:       c.name,
+        number:     c.number,
+        rarity:     c.rarity     || null,
+        supertype:  c.supertype  || null,
+      });
+    }
+    if (batch.length < pageSize) break;
+    page++;
+  }
+  return cards;
+}
+
 // ── Routes ──────────────────────────────────────────────────────────────────
+
+// GET /api/sets — all English sets ever released
+app.get('/api/sets', async (req, res) => {
+  const now = Date.now();
+  const stale = !setsCache.fetchedAt || (now - setsCache.fetchedAt) > TCG_SETS_TTL_MS;
+
+  if (!stale && setsCache.data) return res.json({ sets: setsCache.data, cached: true, fetchedAt: new Date(setsCache.fetchedAt).toISOString() });
+
+  if (setsCache.inFlight) {
+    // Wait for in-flight request to finish
+    while (setsCache.inFlight) await sleep(200);
+    return res.json({ sets: setsCache.data || [], cached: true, fetchedAt: setsCache.fetchedAt ? new Date(setsCache.fetchedAt).toISOString() : null });
+  }
+
+  setsCache.inFlight = true;
+  try {
+    const sets = await tcgFetchAllSets();
+    setsCache.data      = sets;
+    setsCache.fetchedAt = Date.now();
+    res.json({ sets, cached: false, fetchedAt: new Date(setsCache.fetchedAt).toISOString() });
+  } catch (e) {
+    console.error('[TCG] sets error:', e.message);
+    if (setsCache.data) return res.json({ sets: setsCache.data, cached: true, error: e.message });
+    res.status(502).json({ error: 'Failed to fetch sets from Pokemon TCG API', detail: e.message });
+  } finally {
+    setsCache.inFlight = false;
+  }
+});
+
+// GET /api/sets/:setId/cards — all cards in a set
+app.get('/api/sets/:setId/cards', async (req, res) => {
+  const { setId } = req.params;
+  const now = Date.now();
+  const cached = cardsCache.get(setId);
+  const stale  = !cached || (now - cached.fetchedAt) > TCG_SETS_TTL_MS;
+
+  if (!stale && cached) return res.json({ setId, cards: cached.data, cached: true, fetchedAt: new Date(cached.fetchedAt).toISOString() });
+
+  try {
+    const cards = await tcgFetchAllCards(setId);
+    cardsCache.set(setId, { data: cards, fetchedAt: Date.now() });
+    res.json({ setId, cards, cached: false, fetchedAt: new Date(Date.now()).toISOString() });
+  } catch (e) {
+    console.error(`[TCG] cards error for ${setId}:`, e.message);
+    if (cached) return res.json({ setId, cards: cached.data, cached: true, error: e.message });
+    res.status(502).json({ error: `Failed to fetch cards for set ${setId}`, detail: e.message });
+  }
+});
 
 app.get('/api/watchlist', async (req, res) => {
   const now       = Date.now();
